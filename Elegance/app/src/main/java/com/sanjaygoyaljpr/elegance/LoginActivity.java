@@ -3,9 +3,13 @@ package com.sanjaygoyaljpr.elegance;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.app.LoaderManager.LoaderCallbacks;
 
@@ -26,6 +30,7 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -49,8 +54,14 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * TODO: remove after connecting to a real authentication system.
      */
     private static final String[] DUMMY_CREDENTIALS = new String[]{
-            "foo@example.com:hello", "bar@example.com:world"
+            "sanjay@gmail.com:sanjay", "sunil@gmail.com:sunil"
     };
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+    }
+
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
@@ -62,10 +73,18 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private View mProgressView;
     private View mLoginFormView;
 
+    private CheckBox mRememberMeCheckBox;
+    private SharedPreferences loginPreferences;
+    private SharedPreferences.Editor loginPrefsEditor;
+    private Boolean saveLogin;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
@@ -89,6 +108,17 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 attemptLogin();
             }
         });
+
+        mRememberMeCheckBox = (CheckBox)findViewById(R.id.rememberMeCheckBox);
+        loginPreferences = getSharedPreferences("loginPrefs", MODE_PRIVATE);
+        loginPrefsEditor = loginPreferences.edit();
+
+        saveLogin = loginPreferences.getBoolean("saveLogin", false);
+        if (saveLogin == true) {
+            mEmailView.setText(loginPreferences.getString("username", ""));
+            mPasswordView.setText(loginPreferences.getString("password", ""));
+            mRememberMeCheckBox.setChecked(true);
+        }
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
@@ -137,6 +167,12 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
     }
 
+
+    @Nullable
+    @Override
+    public ActionBar getSupportActionBar() {
+        return super.getSupportActionBar();
+    }
 
     /**
      * Attempts to sign in or register the account specified by the login form.
@@ -187,6 +223,16 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             showProgress(true);
             mAuthTask = new UserLoginTask(email, password);
             mAuthTask.execute((Void) null);
+
+            if (mRememberMeCheckBox.isChecked()) {
+                loginPrefsEditor.putBoolean("saveLogin", true);
+                loginPrefsEditor.putString("username", email);
+                loginPrefsEditor.putString("password", password);
+                loginPrefsEditor.commit();
+            } else {
+                loginPrefsEditor.clear();
+                loginPrefsEditor.commit();
+            }
         }
     }
 
@@ -317,9 +363,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
             for (String credential : DUMMY_CREDENTIALS) {
                 String[] pieces = credential.split(":");
-                if (pieces[0].equals(mEmail)) {
+                if (pieces[0].equals(mEmail) && pieces[1].equals(mPassword)) {
                     // Account exists, return true if the password matches.
-                    return pieces[1].equals(mPassword);
+                    // Move to second activity
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    startActivity(intent);
                 }
             }
 
